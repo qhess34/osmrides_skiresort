@@ -347,7 +347,7 @@ body.fs #fsBar{padding-top:max(6px,env(safe-area-inset-top))}
   // Essai d'une autre version sans rien modifier : jeu.html?…&moteur=0.0.2 (ou moteur=local, ou un dossier voisin : moteur=../osmrides/engine/)
   const MOTEUR='0.0.1';
   const q=n=>{const m=new RegExp('[?&]'+n+'=([a-z0-9-]+)').exec(location.search);return m?m[1]:'';};
-  const type=q('type')||'parc',lieu=q('lieu')||'asterix',el=q('el')||'zeus',dir='lieux/'+type+'/'+lieu+'/';
+  const type=q('type')||'ski',lieu=q('lieu')||'vars',el=q('el')||'escondus',dir='lieux/'+type+'/'+lieu+'/';
   const mq=/[?&]moteur=(v?[0-9][0-9.]*|main|local|(?:\.\.\/)+[a-z0-9_.\/-]+\/)(?:&|$)/.exec(location.search),moteur=mq?mq[1]:MOTEUR;
   const ENGINE=moteur==='local'?'engine/':moteur.startsWith('.')?moteur:'https://cdn.jsdelivr.net/gh/qhess34/osmrides@'+moteur+'/engine/';
   const erreur=msg=>()=>{document.body.innerHTML='<p style="padding:2em;color:#fff">'+msg+' <a href="index.html" style="color:#f2c14e">Retour au choix</a></p>';};
