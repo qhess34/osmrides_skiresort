@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1626">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OSMrides">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>Simulateur d'exploitation</title>
+<style>
+:root{--bg:#0f1626;--panel:#18223a;--panel2:#202d4b;--line:#32426a;--txt:#e8ecf6;--dim:#9aa7c4;--gold:#f2c14e;--ok:#4cc38a;--warn:#f0a23b;--bad:#e5484d;--blue:#4f8cff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;-webkit-text-size-adjust:100%;touch-action:manipulation;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--txt);font:14px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{display:flex;flex-direction:column;height:100%}
+button,input{touch-action:manipulation}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:8px 14px;background:linear-gradient(#1b2743,#141d33);border-bottom:2px solid var(--gold)}
+header h1 a{color:var(--dim);text-decoration:none;margin-right:4px}header h1 a:hover{color:var(--gold)}
+header h1{font-size:17px;margin:0;color:var(--gold);letter-spacing:.5px;white-space:nowrap}
+.hud{display:flex;flex-wrap:wrap;gap:6px 8px;flex:1}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px 10px;white-space:nowrap}
+.stat b{color:var(--gold);font-variant-numeric:tabular-nums}
+.speed{display:flex;gap:4px}
+main{display:flex;flex:1;min-height:0}
+#left{flex:1;min-width:0;display:flex;flex-direction:column}
+#view{position:relative;flex:1;min-height:380px;background:#8fc7ee;overflow:hidden}
+#view canvas{display:block;position:absolute;inset:0;touch-action:none}
+#dark{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;z-index:1}
+#cams{position:absolute;left:8px;bottom:8px;display:flex;flex-wrap:wrap;gap:4px;z-index:2;max-width:calc(100% - 16px)}
+#cams button{padding:4px 8px;font-size:12.5px;background:rgba(24,34,58,.82)}
+#cams button.on{background:var(--blue)}
+#hint{position:absolute;right:8px;top:8px;font-size:11.5px;color:#fff;background:rgba(15,22,38,.55);padding:3px 8px;border-radius:6px;z-index:2;pointer-events:none}
+#log{flex:none;height:120px;overflow:auto;padding:6px 12px;font-size:13px;background:#0c1220;border-top:1px solid var(--line)}
+#log div{padding:1px 0;color:var(--dim)}
+#log .good{color:var(--ok)}#log .warn{color:var(--warn)}#log .bad{color:#ff7b7f}
+#log span{color:#62708f;margin-right:6px;font-variant-numeric:tabular-nums}
+#side{width:370px;flex:none;overflow:auto;padding:10px;background:var(--panel);border-left:1px solid var(--line)}
+section{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px}
+section h2{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--gold)}
+button{font:inherit;color:var(--txt);background:#2c3c63;border:1px solid #47598a;border-radius:7px;padding:6px 10px;cursor:pointer}
+button:hover:not(:disabled){background:#3a4d7d}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.on{background:var(--blue);border-color:#8db4ff;color:#fff}
+button.go{background:#1f7a52;border-color:var(--ok)}
+button.stop{background:#8a1f24;border-color:var(--bad)}
+button.stop.on{background:var(--bad);animation:blink 1s infinite}
+@keyframes blink{50%{filter:brightness(1.5)}}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.row+.row{margin-top:6px}
+#desk{position:relative;background:linear-gradient(160deg,#474d57,#2b2f36 60%,#23262c);border:2px solid #14161a;border-radius:10px;padding:12px 12px 14px;box-shadow:inset 0 1px 0 #6a717d,inset 0 -3px 8px #0009}
+#desk h2{color:#d5d9e0;letter-spacing:2px;text-align:center}
+.screw{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c9ced6,#5c626c);box-shadow:inset 0 0 0 1px #0006}
+.lcd{background:#0b1a11;color:#7dffa8;font:12.5px/1.3 ui-monospace,Menlo,Consolas,monospace;padding:7px 9px;border-radius:5px;border:2px solid #05080a;box-shadow:inset 0 0 8px #000;min-height:44px;margin-bottom:6px}
+.deskrow{display:flex;justify-content:space-around;gap:6px;margin-top:10px}
+.ctl{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0}
+.plate{font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:#b9bfca;text-align:center;margin-top:5px;line-height:1.25}
+.pair{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;justify-content:center}
+.dsec{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:6px;border-top:1px solid #0007;box-shadow:0 1px 0 #5a606b inset;color:#d5d9e0;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase}
+.zrow{display:grid;grid-template-columns:1.7fr repeat(5,1fr);gap:4px;align-items:center;justify-items:center;margin-top:4px}.zrow .plate{margin:0}.zrow .zn{justify-self:start;text-align:left;white-space:nowrap}
+.zrow button.pb.sm,.dsec button.pb.sm{width:34px;height:28px;font-size:10px;border-width:2px}.zrow button.pb.sm.disp{grid-column:4/-1;width:100%;max-width:160px;letter-spacing:.8px}.dsec button.pb.sm{width:auto;padding:0 7px;font-size:9px}#deskZones button.pb.sm[id$=_m]{font-size:8.5px;width:38px}
+.zl{display:inline-block;width:9px;height:9px;border-radius:50%;background:#4a5059;margin-right:5px;vertical-align:-1px}.zl.occ{background:var(--warn);box-shadow:0 0 5px var(--warn)}.zl.mv{background:var(--ok);box-shadow:0 0 5px var(--ok)}.zl.ok{background:var(--ok);box-shadow:0 0 5px var(--ok)}#lRes.blink{animation:blink .6s infinite}.zl.err{background:var(--bad);box-shadow:0 0 5px var(--bad)}
+button.pb.sm{letter-spacing:.3px}button.pb.mv{animation:blink .6s infinite}
+button.pb{width:54px;height:54px;border-radius:50%;border:4px solid #b4b9c2;padding:0;color:#fff;font-size:17px;background:radial-gradient(circle at 35% 30%,#69707c,#2b2f36);box-shadow:0 3px 0 #0e0f12,0 5px 9px #000a;transition:transform .05s}
+button.pb:hover:not(:disabled){filter:brightness(1.12);background:radial-gradient(circle at 35% 30%,#69707c,#2b2f36)}
+button.pb:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 #0e0f12}
+button.pb.sq{border-radius:9px}button.pb.sm{width:38px;height:38px;font-size:13px;border-width:3px}button.pb.big{width:66px;height:66px;font-size:24px}
+button.pb.green,button.pb.green:hover:not(:disabled){background:radial-gradient(circle at 35% 30%,#3f8a60,#17402a)}
+button.pb.green.lit,button.pb.green.lit:hover:not(:disabled){background:radial-gradient(circle at 35% 30%,#b6ffd2,#1fc267);box-shadow:0 3px 0 #0e0f12,0 0 16px #35ff8a;color:#063}
+button.pb.blue,button.pb.blue:hover:not(:disabled){background:radial-gradient(circle at 35% 30%,#44689e,#1b2d4d)}
+button.pb.blue.lit,button.pb.blue.lit:hover:not(:disabled){background:radial-gradient(circle at 35% 30%,#cfe2ff,#3f86ff);box-shadow:0 3px 0 #0e0f12,0 0 16px #5c9cff;color:#024}
+button.pb.amber,button.pb.amber:hover:not(:disabled){background:radial-gradient(circle at 35% 30%,#a8782c,#4f3610)}
+button.pb.amber.lit,button.pb.amber.lit:hover:not(:disabled){background:radial-gradient(circle at 35% 30%,#ffe9b0,#f5a623);box-shadow:0 3px 0 #0e0f12,0 0 16px #ffb93d;color:#420}
+button.pb.estop,button.pb.estop:hover:not(:disabled){width:66px;height:66px;border:7px solid #f2c14e;background:radial-gradient(circle at 35% 30%,#ff7a6e,#a5130d)}
+button.pb.estop.lit{transform:translateY(3px);box-shadow:0 0 18px #ff3b30;animation:blink 1s infinite}
+button.sel{width:58px;height:58px;border-radius:50%;border:4px solid #b4b9c2;background:radial-gradient(circle at 35% 30%,#3a3f47,#15171b);box-shadow:0 3px 0 #0e0f12,0 5px 9px #000a;padding:0;position:relative}
+button.sel:hover:not(:disabled){background:radial-gradient(circle at 35% 30%,#3a3f47,#15171b);filter:brightness(1.15)}
+button.sel i{position:absolute;left:50%;top:50%;width:10px;height:40px;margin:-20px 0 0 -5px;border-radius:4px;background:linear-gradient(#f4f5f7 0 34%,#8b919c 34%);transform:rotate(-42deg);transition:transform .2s}
+button.sel.manu i{transform:rotate(42deg)}
+#desk .lamps{margin-top:12px}#desk .lamp{background:#17191e;border-color:#0c0d10;color:#c6cbd4}
+#crowd,#patL{flex:1;min-width:120px;accent-color:var(--gold)}#crowdV,#patV{color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lamp.off i{background:#4a5059;box-shadow:none}#desk .pair .lamp{padding:4px 8px;min-width:52px}
+.lamps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.lamp{text-align:center;font-size:12px;padding:4px 2px;border-radius:6px;background:#141c30;border:1px solid var(--line)}
+.lamp i{display:block;width:12px;height:12px;border-radius:50%;margin:0 auto 3px;background:var(--ok);box-shadow:0 0 6px currentColor}
+.lamp.occ i{background:var(--warn)}.lamp.err i{background:var(--bad)}
+#lEvac{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:6px}#lEvac i{margin:0;flex:none}#lEvac.err i{animation:blink .8s infinite}
+#desk button.pb.sq:not(.sm){font-size:10px;line-height:1.15;letter-spacing:.4px;font-weight:700}#desk button.pb.big{font-size:11.5px;letter-spacing:.5px;font-weight:700}
+.card{background:#141c30;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:6px}
+.card .name{font-weight:600}.card .st{color:var(--dim);font-size:13px;min-height:18px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.bar{position:relative;height:14px;background:#0c1220;border-radius:7px;overflow:hidden;margin:4px 0 6px;border:1px solid var(--line)}
+.bar>i{position:absolute;inset:0 auto 0 0;background:var(--ok);border-radius:7px}
+.bar>span{position:absolute;inset:0;font-size:10.5px;line-height:13px;text-align:center;color:#fff;text-shadow:0 0 3px #000}
+.note{font-size:12px;color:var(--dim);margin-top:6px}
+#tech{font-size:13px;margin-bottom:4px}
+.modal{position:fixed;inset:0;background:rgba(5,8,16,.78);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal>div{background:var(--panel);border:2px solid var(--gold);border-radius:14px;max-width:640px;width:100%;max-height:92vh;overflow:auto;padding:20px 24px}
+.modal h2{margin:0 0 10px;color:var(--gold)}
+.modal li{margin:4px 0}
+.modal table{width:100%;border-collapse:collapse;margin:10px 0}
+.modal td{padding:4px 6px;border-bottom:1px solid var(--line)}
+.modal td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.hidden{display:none}
+small.legal{color:#62708f}
+#fsBar,#tabs{display:none}
+#fsBar{position:absolute;top:0;left:0;right:0;z-index:32;flex-wrap:wrap;align-items:center;gap:4px 6px;padding:6px max(8px,env(safe-area-inset-right)) 6px max(8px,env(safe-area-inset-left));background:rgba(15,22,38,.82);border-bottom:1px solid var(--line)}
+#fsBar button{padding:4px 10px;font-size:13px;min-height:36px}
+#fsBar .grp{display:flex;gap:4px}#fsBar .sp{flex:1}
+#fsHud{font-size:12.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;font-variant-numeric:tabular-nums}
+#fsMsg{flex-basis:100%;font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fsMsg.warn{color:var(--warn)}#fsMsg.bad{color:#ff7b7f}#fsMsg.good{color:var(--ok)}
+/* plein écran de la carte : API Fullscreen sur #view, ou repli CSS (la carte remplit la fenêtre) */
+#view.fs{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100dvh;min-height:0;z-index:20}
+body.fs{overflow:hidden}
+body.fs #fsBar{display:flex}body.fs #hint{display:none}
+body.fs #cams{bottom:max(8px,env(safe-area-inset-bottom));left:max(8px,env(safe-area-inset-left))}
+/* tiroir du pupitre : feuille basse en portrait, panneau à droite en paysage (téléphone ou plein écran) */
+body.dm #side,body.fs #side{position:fixed;z-index:31;margin:0;border:0;border-top:2px solid var(--gold);box-shadow:0 -6px 22px #000b;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;visibility:hidden;transition:transform .22s ease,visibility 0s .22s;
+  left:0;right:0;bottom:var(--sb,0px);width:auto;height:min(58vh,600px);height:min(58dvh,600px);transform:translateY(110%)}
+body.dm:not(.fs) #log{position:fixed;z-index:31;left:0;right:0;bottom:var(--sb,0px);height:min(42vh,320px);height:min(42dvh,320px);border-top:2px solid var(--gold);box-shadow:0 -6px 22px #000b;overscroll-behavior:contain;touch-action:pan-y;visibility:hidden;transform:translateY(110%);transition:transform .22s ease,visibility 0s .22s;font-size:13.5px;padding:8px 12px}
+body[data-tab=pupitre]:not(.fs) #side,body[data-tab=journal]:not(.fs) #log,body.fsdesk #side{transform:none;visibility:visible;transition:transform .22s ease,visibility 0s}
+body.dm main{flex-direction:column}
+body.dm #view{min-height:0;flex:1}
+body.dm #left{flex:1}
+body.dm #app{height:100vh;height:100dvh}
+body.dm{overflow:hidden}
+body.dm:not(.fs) #app{padding-bottom:var(--sb,0px)}
+body.dm #hint{display:none}
+body.dm header{padding:6px max(10px,env(safe-area-inset-right)) 6px max(10px,env(safe-area-inset-left));gap:4px 10px}
+body.dm header h1{font-size:15px;flex:1 1 auto}body.dm header h1 a{display:inline-block;padding:6px 10px 6px 0}
+body.dm .hud{flex:1 1 100%;order:3;gap:5px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;touch-action:pan-x;-webkit-overflow-scrolling:touch;margin:0 -10px;padding:0 10px}body.dm .hud::-webkit-scrollbar{display:none}body.dm .stat{flex:none}
+body.dm .stat{padding:1px 7px;font-size:12px}
+body.dm .speed{gap:4px;flex:none}body.dm .speed button{min-width:44px;min-height:44px;padding:4px 6px}
+body.dm button{min-height:44px}
+body.dm #cams{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x;scrollbar-width:none;left:0;bottom:0;max-width:100%;width:100%;padding:6px 8px;gap:6px;background:linear-gradient(transparent,rgba(15,22,38,.55))}
+body.dm #cams::-webkit-scrollbar{display:none}
+body.dm #cams button,body.fs #cams button{flex:none;min-height:40px;padding:4px 12px;white-space:nowrap}
+body.dm #tabs{display:grid;grid-template-columns:repeat(3,1fr);position:fixed;left:0;right:0;bottom:0;z-index:33;height:calc(var(--sb) );padding-bottom:env(safe-area-inset-bottom);background:#141d33;border-top:2px solid var(--gold)}
+body.dm #tabs button{border-radius:0;border:0;border-right:1px solid var(--line);background:#141d33;font-size:15px;font-weight:600;min-height:48px}
+body.dm #tabs button:last-child{border-right:0}
+body.dm #tabs button.on{background:var(--blue);color:#fff}
+body.dm.fs #tabs{display:none}
+body.dm .modal>div{padding:16px}
+:root{--sb:0px}
+body.dm{--sb:calc(48px + env(safe-area-inset-bottom))}
+body.fs{--sb:0px}
+body.fs #side{top:auto;--sb:0px}
+body.fs #side,body.dm #side{padding:10px max(10px,env(safe-area-inset-right)) 10px max(10px,env(safe-area-inset-left))}
+body.dm .zrow{grid-template-columns:minmax(0,1fr) repeat(5,44px);gap:3px}body.dm .zrow .zn{white-space:normal;line-height:1.1}
+body.dm .zrow button.pb.sm,body.dm .dsec button.pb.sm,body.dm #deskZones button.pb.sm[id$=_m]{width:44px;height:44px;font-size:11px}
+body.dm .dsec button.pb.sm{width:auto;padding:0 10px}
+body.dm button.pb.sm{width:44px;height:44px}body.dm .zrow button.pb.sm.disp{width:100%}
+body.dm .zrow .zn{font-size:9px}
+body.dm #crowd{min-height:32px}
+body.dm .row button{min-height:44px}
+.modal{z-index:40}
+.modal>div{max-height:92vh;max-height:92dvh;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.modal>div>button.go{position:sticky;bottom:-20px;width:100%;min-height:44px;margin-top:8px;box-shadow:0 -10px 14px var(--panel)}
+@media(orientation:landscape){
+  body.dm #side,body.fs #side{left:auto;right:0;top:var(--st,0px);bottom:0;height:auto;width:min(48vw,430px);border-top:0;border-left:2px solid var(--gold);box-shadow:-6px 0 22px #000b;transform:translateX(110%)}
+  body.dm:not(.fs) #log{left:auto;right:0;top:var(--st,0px);bottom:0;height:auto;width:min(48vw,430px);border-top:0;border-left:2px solid var(--gold);transform:translateX(110%)}
+  body[data-tab=pupitre]:not(.fs) #side,body[data-tab=journal]:not(.fs) #log,body.fsdesk #side{transform:none}
+  body.fs #side{--st:var(--fsh,46px)}
+}
+/* paysage d'un téléphone : onglets dans l'en-tête, pas de barre basse */
+@media(orientation:landscape) and (max-height:520px){
+  body.dm{--sb:0px}
+  body.dm header{flex-wrap:nowrap;align-items:center;gap:4px 8px;padding-top:4px;padding-bottom:4px}
+  body.dm header h1{flex:none;font-size:14px;max-width:21vw;overflow:hidden;text-overflow:ellipsis}
+  body.dm .hud{order:0;flex:1 1 0;min-width:0;margin:0;padding:0}body.dm header h1 span{display:none}body.dm header h1{max-width:none}
+  body.dm .stat{font-size:11px;padding:0 5px;line-height:1.5}
+  body.dm .speed button{min-width:44px;min-height:44px}
+  body.dm #tabs{display:flex;position:static;height:auto;padding:0;background:none;border:0;gap:4px;flex:none}
+  body.dm #tabs button{border:1px solid #47598a;border-radius:7px;background:#2c3c63;min-height:44px;padding:4px 10px;font-size:13px}
+  body.dm #tabs button.on{background:var(--blue)}
+  body.dm .modal>div{max-height:96dvh}
+}
+@media(max-width:900px){body:not(.dm) #side{width:auto}}
+@media(max-width:380px){body.dm .stat{font-size:11.5px;padding:1px 5px}body.dm header h1{font-size:14px}}
+/* mode application (écran d'accueil) : encoche et barre d'état */
+body:not(.fs) header{padding-top:max(4px,env(safe-area-inset-top));padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+body.fs #fsBar{padding-top:max(6px,env(safe-area-inset-top))}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <h1><a href="index.html" title="Choisir une autre attraction">←</a> <span id="ttl"></span></h1>
+  <div class="hud">
+    <div class="stat">Heure <b id="hTime">10:00</b></div>
+    <div class="stat">Météo <b id="hWx">☀️</b></div>
+    <div class="stat" id="hMode" style="display:none">Bac à sable</div>
+    <div class="stat" id="hMoneyBox">Budget <b id="hMoney">0 €</b></div>
+    <div class="stat">Satisfaction <b id="hSat">75 %</b></div>
+    <div class="stat">File <b id="hQueue">0</b> · attente <b id="hWait">0 min</b></div>
+    <div class="stat">Quai <b id="hPlat">0/28</b></div>
+    <div class="stat">Passagers <b id="hRiders">0</b></div>
+  </div>
+  <div class="speed">
+    <button data-act="speed" data-arg="0" id="sp0">⏸</button>
+    <button data-act="speed" data-arg="1" id="sp1">▶</button>
+    <button data-act="speed" data-arg="2" id="sp2">×2</button>
+    <button data-act="speed" data-arg="4" id="sp4">×4</button>
+    <button data-act="speed" data-arg="8" id="sp8">×8</button>
+    <button data-act="mute" id="bMute" title="Son coupé (par défaut) : cliquer pour l'activer ; allumé = son activé">Son</button>
+    <button data-act="help" aria-label="Aide">?</button>
+  </div>
+  <div id="tabs" role="tablist">
+    <button data-act="tab" data-arg="carte" class="on">Carte</button>
+    <button data-act="tab" data-arg="pupitre">Pupitre</button>
+    <button data-act="tab" data-arg="journal">Journal</button>
+  </div>
+</header>
+<main>
+  <div id="left">
+    <div id="view"><div id="dark"></div>
+      <div id="fsBar"><span id="fsHud"></span><span class="sp"></span>
+        <span class="grp"><button data-act="speed" data-arg="0">Pause</button><button data-act="speed" data-arg="1">×1</button><button data-act="speed" data-arg="2">×2</button><button data-act="speed" data-arg="4">×4</button></span>
+        <span class="grp"><button data-act="fsdesk" id="bDesk" title="Afficher ou masquer le pupitre par-dessus la carte">Pupitre</button><button data-act="fs" title="Quitter le plein écran">Quitter</button></span>
+        <span id="fsMsg"></span></div>
+      <div id="cams"></div>
+      <div id="hint">Glisser : déplacer · Molette : zoom</div>
+    </div>
+    <div id="log"></div>
+  </div>
+  <aside id="side">
+    <section id="desk">
+      <i class="screw" style="left:6px;top:6px"></i><i class="screw" style="right:6px;top:6px"></i><i class="screw" style="left:6px;bottom:6px"></i><i class="screw" style="right:6px;bottom:6px"></i>
+      <h2>Pupitre de commande</h2>
+      <div class="lcd" id="opNote"></div>
+      <div class="deskrow">
+        <div class="ctl"><button class="pb sq green" id="bOpen" data-act="open" title="Ouvrir ou fermer l'entrée de la file ; les visiteurs déjà dans la file continuent d'embarquer">OUV.<br>FERM.</button><div class="plate">Entrée<br>ouverte</div></div>
+        <div class="ctl"><button class="pb sq amber" id="bEvac" data-act="evac" title="Évacuer la file d'attente : tout le monde ressort par l'entrée (voyant Évacuation en cours jusqu'à la fin)">ÉVAC.</button><div class="plate">Évacuer<br>la file</div></div>
+        <div class="ctl"><button class="sel" id="bAuto" data-act="auto" title="Départs automatiques ou manuels"><i></i></button><div class="plate">Auto · Manuel</div></div>
+      </div>
+      <div class="deskrow">
+        <div class="ctl"><button class="pb sq blue" id="bGate" data-act="gates" title="Ouvrir ou fermer les portillons du quai (seulement à la main, en auto comme en manuel)">OUV.<br>FERM.</button><div class="plate">Portillons</div></div>
+        <div class="ctl"><button class="pb sq blue" id="bRes" data-act="res" title="Sécurités des passagers : ouvrir (à quai) / verrouiller (portillons fermés : lance la fermeture et la vérification par les deux opérateurs)">OUV.<br>VERR.</button><div class="plate"><span class="zl" id="lRes"></span>Sécurités</div></div>
+        <div class="ctl"><button class="pb green big" id="bGo" data-act="depart" title="Donner le départ">DÉPART</button><div class="plate">Départ</div></div>
+        <div class="ctl"><button class="pb estop" id="bStop" data-act="estop" title="Arrêt d'urgence (appuyer de nouveau pour réarmer)"></button><div class="plate">Arrêt<br>d'urgence</div></div>
+      </div>
+      <div class="lamps">
+        <div class="lamp" id="lGare"><i></i>Gare</div>
+        <div class="lamp" id="lLift"><i></i>Lift</div>
+        <div class="lamp" id="lCourse"><i></i>Parcours</div>
+        <div class="lamp" id="lBrake"><i></i>Freins</div>
+        <div class="lamp off" id="lEvac" title="Évacuation de la file : allumé tant que des évacués ressortent, rouge si une barrière fermée les bloque"><i></i><span id="lEvacT">Évacuation en cours</span></div>
+      </div>
+      <div class="deskrow">
+        <div class="ctl"><div class="pair"><div class="lamp off" id="lOp0"><i></i>Op. 1</div><div class="lamp off" id="lOp1"><i></i>Op. 2</div></div><div class="plate">Lapbars validés</div></div>
+        <div class="ctl"><button class="sel" id="bByp" data-act="bypass" title="By-pass de la validation des lapbars par les opérateurs"><i></i></button><div class="plate">Validation<br>Normale · By-pass</div></div>
+      </div>
+      <div id="deskZones"></div>
+    </section>
+
+    <section>
+      <h2>Bilan</h2>
+      <div class="row"><button id="bBil" data-act="bilan">Bilan de l'exploitation</button></div>
+      <div class="note">Jeu continu : statistiques cumulées depuis le début de la partie (passagers, recettes, salaires prélevés à l'heure, satisfaction).</div>
+    </section>
+    <section>
+      <h2>Fréquentation du parc</h2>
+      <div class="row"><input type="range" id="crowd" min="0" max="300" step="10" value="100" aria-label="Fréquentation du parc"><b id="crowdV">100 % — normale</b></div>
+      <div class="note">Règle l'afflux de visiteurs vers l'attraction. Au-delà de 200 %, la file se remplit jusqu'à saturation et les visiteurs en trop sont refoulés.</div>
+    </section>
+    <section>
+      <h2>Patience des visiteurs</h2>
+      <div class="row"><input type="range" id="patL" min="0" max="5" step="1" value="1" aria-label="Patience des visiteurs"><b id="patV">normale</b></div>
+      <div class="note">Temps d'attente avant qu'un visiteur quitte la file, mécontent. « Infinie » : personne ne quitte la file, même sous l'orage.</div>
+    </section>
+    <section>
+      <h2>Trains</h2>
+      <div id="trains"></div>
+    </section>
+    <section>
+      <h2>Maintenance</h2>
+      <div id="tech"></div>
+      <div class="bar"><i id="techBar" style="background:var(--blue)"></i><span id="techTxt"></span></div>
+      <div class="card">
+        <div class="name">Chaîne du lift</div>
+        <div class="bar"><i id="wChain"></i><span id="wChainT"></span></div>
+        <div class="row">
+          <button id="bLiftFix" data-act="job" data-arg="liftFix">Dépanner (250 €)</button>
+          <button id="bChainRev" data-act="job" data-arg="chainRev">Réviser (450 €)</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="name" id="trackName">Voie</div>
+        <div class="bar"><i id="wTrack"></i><span id="wTrackT"></span></div>
+        <div class="row"><button id="bTrackRev" data-act="job" data-arg="trackRev">Entretien de la voie (900 €)</button></div>
+      </div>
+      <div class="card">
+        <div class="name">Freins de fin de parcours</div>
+        <div class="bar"><i id="wBrake"></i><span id="wBrakeT"></span></div>
+        <div class="row">
+          <button id="bBrakeFix" data-act="job" data-arg="brakeFix">Débloquer (200 €)</button>
+          <button id="bBrakeRev" data-act="job" data-arg="brakeRev">Réviser (350 €)</button>
+        </div>
+      </div>
+      <div class="note">Une seule équipe technique : une intervention à la fois. Les révisions de la chaîne, de la voie et des freins exigent des trains à l'arrêt et bloquent les départs.</div>
+    </section>
+    <small class="legal">Jeu de fan non officiel, sans lien avec le Parc Astérix. Tracé au sol et alentours : © contributeurs OpenStreetMap. Hauteurs estimées.</small>
+  </aside>
+</main>
+</div>
+
+<div class="modal hidden" id="mHelp"><div>
+  <h2 id="helpTtl"></h2>
+  <p>Vous êtes chef d'attraction. Faites tourner les trains, gardez les visiteurs heureux et l'attraction en bon état.</p>
+  <ul>
+    <li><b>Ouvrez l'entrée</b> (bouton du pupitre, ou clic sur le portail à l'entrée de la file) pour laisser entrer les visiteurs. Fermez-la à tout moment : plus personne n'entre, et les visiteurs déjà dans la file continuent d'embarquer. Ils se rangent sur le quai, deux par travée, derrière les <b>portillons</b>.</li>
+    <li><b>Pupitre de commande</b> : vous commandez des <b>zones</b>, jamais un train. Sélecteur Auto · Manuel, portillons, départ, arrêt d'urgence, entrée de la file, puis par section : <b>Gare</b> (freins serrés automatiquement tant qu'un train est à quai, relâchés seulement par la séquence Départ : portillons fermés puis lapbars validés ; moteurs AV / AR / STOP : le train à quai avance à vide, pour le garage), <b>Lift</b> (marche / arrêt), <b>Zones de freinage</b> (freins de bloc, frein final… : AUTO par défaut, le cantonnement les serre et les relâche seul ; passez une zone en MANU pour serrer, relâcher ou avancer à la main ; le relâchement est refusé si la section suivante est occupée ; TOUT AUTO remet tout en automatique), <b>Garage</b> (position de l'appareil, et pour chaque voie freins et moteurs). Voyant de zone : orange = occupée, vert = train en mouvement, rouge = défaut. Les <b>portillons</b> ne s'ouvrent et ne se ferment qu'à votre commande, même en auto : fermez-les pour que la vérification des lapbars commence et que le train parte.</li>
+    <li><b>Quai</b> : les visiteurs se répartissent derrière les portillons, deux au plus par portillon, un portillon par wagon. Ils y restent jusqu'à l'ouverture, puis montent dans le wagon en face.</li>
+    <li><b>Lapbars</b> : portillons fermés, deux opérateurs de quai vérifient chacun une moitié du train puis valident sur leur bouton (voyants Op. 1 et Op. 2). Le sélecteur « By-pass » permet de partir sans cette validation, au risque d'un incident et d'une amende.</li>
+    <li id="helpGarage"></li>
+    <li><b>Maintenance</b> : l'usure augmente à chaque tour. Plus elle est haute, plus les pannes sont fréquentes (lift bloqué, freins, lapbars). À 100 %, l'élément est hors service.</li>
+    <li><b>Orage</b> : dès qu'il éclate, suspendez les départs (mode manuel ou arrêt d'urgence). Chaque train envoyé sous l'orage coûte une amende.</li>
+    <li>Les visiteurs qui attendent trop longtemps repartent mécontents. Le jeu est continu : l'horloge tourne de 10:00 à 19:00 puis repart à 10:00 (affluence la plus forte en milieu de journée), sans rien remettre à zéro ; l'attraction ne ferme que si vous fermez l'entrée. Le bouton « Bilan de l'exploitation » du pupitre affiche les statistiques cumulées.</li>
+    <li><b>Fréquentation</b> : le curseur du panneau de droite règle l'afflux de visiteurs, de parc vide à saturé.</li>
+    <li><b>File modulable</b> : un ou plusieurs raccourcis court-circuitent une boucle de la file. À chaque fourche de la file, une barrière pivote pour diriger les visiteurs vers la boucle ou vers le raccourci : cliquez dessus sur la carte. Les visiteurs ne franchissent que les barrières ouvertes ; ceux déjà engagés terminent leur chemin. Le bouton « Toits » retire les toitures pour voir l'intérieur de la gare et du garage. Raccourci ouvert : file courte. Raccourci fermé : file longue, plus de capacité.</li>
+    <li><b>Vue aérienne</b> : glissez pour vous déplacer, molette pour zoomer jusqu'aux visiteurs, ou suivez un train avec les boutons en bas de la vue.</li>
+  </ul>
+  <p>Chaque passager rapporte 5 €. Les salaires coûtent environ 39 € par heure de jeu, prélevés en continu. Budget sous −2 000 € : fin de partie.</p>
+  <button class="go" data-act="closeHelp">C'est parti !</button>
+  <button id="bNew" style="float:right;font-size:12px;padding:3px 8px">Nouvelle partie</button>
+</div></div>
+<div class="modal hidden" id="mNew"><div>
+  <h2>Nouvelle partie</h2>
+  <p>La sauvegarde de cette attraction, dans le mode choisi, sera effacée. <b>Carrière</b> : budget, météo, pannes et usure. <b>Bac à sable</b> : ni budget, ni météo, ni pannes. Les sauvegardes des deux modes sont séparées.</p>
+  <button id="bNewCareer">Carrière</button> <button id="bNewSandbox">Bac à sable</button> <button id="bNewCancel">Annuler</button>
+</div></div>
+<div class="modal hidden" id="mBil"><div>
+  <h2 id="bTitle"></h2>
+  <table id="bTable"></table>
+  <p id="bMsg"></p>
+  <button class="go" data-act="closeBil" id="bBtn">Reprendre</button>
+</div></div>
+
+<script>
+/* Charge l'élément demandé (?type=parc&lieu=asterix&el=zeus, docs/hierarchie.md) : catalogue, données, configuration, données de l'éditeur (facultatives), puis moteur. */
+(function(){
+  // Version du moteur (docs/versions.md) : 'local' = dossier engine/ de ce dépôt ; '0.0.1', '0.1.0'… = version publiée (étiquette git), chargée en ligne.
+  // Essai d'une autre version sans rien modifier : jeu.html?…&moteur=0.0.2 (ou moteur=local, ou un dossier voisin : moteur=../osmrides/engine/)
+  const MOTEUR='0.0.1';
+  const q=n=>{const m=new RegExp('[?&]'+n+'=([a-z0-9-]+)').exec(location.search);return m?m[1]:'';};
+  const type=q('type')||'parc',lieu=q('lieu')||'asterix',el=q('el')||'zeus',dir='lieux/'+type+'/'+lieu+'/';
+  const mq=/[?&]moteur=(v?[0-9][0-9.]*|main|local|(?:\.\.\/)+[a-z0-9_.\/-]+\/)(?:&|$)/.exec(location.search),moteur=mq?mq[1]:MOTEUR;
+  const ENGINE=moteur==='local'?'engine/':moteur.startsWith('.')?moteur:'https://cdn.jsdelivr.net/gh/qhess34/osmrides@'+moteur+'/engine/';
+  const erreur=msg=>()=>{document.body.innerHTML='<p style="padding:2em;color:#fff">'+msg+' <a href="index.html" style="color:#f2c14e">Retour au choix</a></p>';};
+  const load=(src,next,opt,msg)=>{const s=document.createElement('script');s.src=src;s.onload=next;
+    s.onerror=opt?next:erreur(msg||'Attraction inconnue : '+type+' / '+lieu+' / '+el+'.');
+    document.body.appendChild(s);};
+  const moteurJs=()=>load(ENGINE+'moteur.js',null,0,'Moteur '+moteur+' introuvable (connexion Internet ?).');
+  // SITE.type et SITE.lieu : clé de sauvegarde (engine/save.js). game.js : données de l'éditeur, facultatif (absent : on continue)
+  load('lieux/index.js',()=>load(dir+el+'.data.js',()=>load(dir+el+'.js',()=>{SITE.type=type;SITE.lieu=lieu;load(dir+el+'.game.js',moteurJs,1);})));
+})();
+</script>
+
+<script>
+/* Hors ligne : service worker, seulement en http(s) (rien sous file://) */
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
+</script>
+</body>
+</html>

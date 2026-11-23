@@ -12,7 +12,8 @@ Session longue lancée par le propriétaire ; mémoire et reprise : `docs/PILOTA
 - Réalisme : rendu crédible, couleurs sourdes, aucun pictogramme ni emoji, rien d'enfantin.
 - OSM est la référence ; tout ce qui est estimé est signalé dans le code et dit au propriétaire.
 - Code lisible, KISS ; aucune dépendance, tout marche en ouvrant le fichier (`file://`), sans `fetch` ni modules ES.
-- Le moteur (`engine/`) est une **copie figée** d'une version d'`osmrides` : ne jamais la modifier ici ; un besoin = issue `inter-equipe` dans `qhess34/osmrides`.
+- Moteur et éditeur **chargés par version** (`const MOTEUR='0.0.1';` dans `jeu.html`, mode d'emploi : `docs/versions.md` d'osmrides) : aucun dossier `engine/` ni `editor/` ici. Le code propre au ski (télésiège, remontées, pistes) se fait ici ; un besoin du noyau générique = issue `inter-equipe` dans `qhess34/osmrides`.
+- Éditeur : `docker compose up -d` → http://127.0.0.1:8787/ (`compose.yaml`). Tests en session cloud : clone voisin d'osmrides, `jeu.html?…&moteur=../osmrides/engine/`.
 - Git : branche `main`, commits directs, messages en anglais à l'impératif.
 
 ## Tests

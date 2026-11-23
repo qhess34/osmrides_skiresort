@@ -1,0 +1,46 @@
+# Éditeur OSMrides pour ce dépôt de jeu (modèle fourni par qhess34/osmrides, tools/jeu/compose.yaml ; docs/versions.md).
+#   export T2Z_UID=$(id -u) T2Z_GID=$(id -g)   # propriétaire des fichiers écrits (défaut 1000:1000)
+#   docker compose up -d                        # puis http://127.0.0.1:8787/
+#   docker compose down
+# Version de l'éditeur = celle du moteur du jeu (const MOTEUR='…' dans jeu.html), téléchargée depuis GitHub à chaque démarrage ;
+# autre version pour essai : OSMRIDES=0.0.2 docker compose up -d (ou main).
+# Dépôt monté en lecture seule, sauf lieux/ (seul dossier où l'éditeur écrit : lieux/<type>/<lieu>/<el>.game.js). Port lié à 127.0.0.1.
+# Envoi vers OSM (facultatif) : osm.local.json à la racine du dépôt (jamais commité : .gitignore), voir editor/README.md d'osmrides.
+services:
+  editeur:
+    image: node:22-alpine
+    user: "${T2Z_UID:-1000}:${T2Z_GID:-1000}"
+    environment:
+      HOST: 0.0.0.0        # dans le conteneur ; sur l'hôte, le port n'est publié que sur 127.0.0.1
+      PORT: "8787"
+      T2Z_ROOT: /depot
+      OSM_CONFIG: /depot/osm.local.json
+      OSMRIDES: ${OSMRIDES:-}
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        V=$${OSMRIDES:-$$(sed -n "s/.*const MOTEUR='\([^']*\)'.*/\1/p" /depot/jeu.html)}
+        echo "Téléchargement de l'éditeur OSMrides $$V"
+        mkdir -p /tmp/osmrides && cd /tmp/osmrides
+        wget -qO- "https://codeload.github.com/qhess34/osmrides/tar.gz/$$V" | tar -xz
+        exec node /tmp/osmrides/*/editor/server.js
+    volumes:
+      - type: bind
+        source: .
+        target: /depot
+        read_only: true
+      - type: bind
+        source: ./lieux
+        target: /depot/lieux
+    ports:
+      - "127.0.0.1:8787:8787"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"

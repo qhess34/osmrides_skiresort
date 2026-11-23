@@ -18,4 +18,4 @@ Après 3 ou 4 demandes ou une grande étape : mettre à jour « État courant »
 
 _23/11/2026, mis en place par la session de pilotage n° 9 d'osmrides._
 
-Dépôt vide au 23/11. Premier jalon (issue osmrides #49, décisions du propriétaire) : Escondus V15 ; sièges, vitesse, sens et altitude ESTIMÉS et signalés ; pistes affichées avec choix été / hiver ; cadence et embarquement seulement (pas de météo). Étude OSM : `docs/vars-notes.md` d'osmrides (tuiles API ≤ 0,045 × 0,05°). Copie figée du moteur v1 ; ce qui manque au moteur (câble, sièges) se demande au Chef moteur par issue `inter-equipe`.
+Dépôt vide au 23/11. Premier jalon (issue osmrides #49, décisions du propriétaire) : Escondus V15 ; sièges, vitesse, sens et altitude ESTIMÉS et signalés ; pistes affichées avec choix été / hiver ; cadence et embarquement seulement (pas de météo). Étude OSM : `docs/vars-notes.md` d'osmrides (tuiles API ≤ 0,045 × 0,05°). Moteur chargé par version (0.0.1, `docs/versions.md` d'osmrides, issue #2) : pas de copie d'`engine/` ; le code propre au ski se fait ici ; ce qui manque au noyau générique se demande au Chef moteur par issue `inter-equipe` chez osmrides.
